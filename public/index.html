@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShareFood — Reduce Food Waste, Feed Communities</title>
+    <meta name="description" content="ShareFood connects food donors with NGOs to reduce food waste and fight hunger in Bangalore neighborhoods.">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#FF6B35">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="stylesheet" href="index.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>">
+    <!-- Leaflet CSS (free, no API key) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+</head>
+<body>
+    <div id="app">
+        <!-- Toast Container -->
+        <div id="toast-container" class="toast-container"></div>
+
+        <!-- PWA Install Banner -->
+        <div id="pwa-install-banner" class="pwa-install-banner">
+            <span class="pwa-icon">📲</span>
+            <div class="pwa-text">
+                <strong>Install ShareFood</strong>
+                <span>Add to home screen for quick access</span>
+            </div>
+            <div class="pwa-actions">
+                <button class="btn btn-primary btn-sm" id="pwa-install-btn">Install</button>
+                <button class="pwa-dismiss" id="pwa-dismiss-btn">&times;</button>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <header class="header glassmorphism">
+            <div class="logo">
+                <span class="logo-icon">🍽️</span>
+                ShareFood
+            </div>
+            <div class="header-right">
+                <div class="user-info" id="user-info" style="display: none;">
+                    <div class="user-email-chip">
+                        <span class="avatar" id="user-avatar">U</span>
+                        <span id="user-email-display"></span>
+                    </div>
+                    <button id="profile-btn" class="btn-icon" title="Profile Settings">⚙️</button>
+                    <button id="logout-btn" class="btn btn-secondary btn-sm">Logout</button>
+                </div>
+                <button class="theme-toggle" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode"></button>
+            </div>
+        </header>
+
+        <!-- Profile Modal -->
+        <div id="profile-modal" class="modal" style="display: none;">
+            <div class="modal-content card glassmorphism">
+                <div class="modal-header">
+                    <h3>Profile Settings</h3>
+                    <button class="close-btn" id="close-profile-btn">&times;</button>
+                </div>
+                <form id="profile-form">
+                    <div class="input-group">
+                        <label for="profile-phone">Phone Number</label>
+                        <input type="tel" id="profile-phone" required placeholder="+91 XXXXX XXXXX">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Save Changes</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ==================== AUTH ==================== -->
+        <div id="auth-container" class="container">
+            <div class="auth-wrapper">
+                <div class="auth-card">
+                    <div class="auth-hero">
+                        <span class="auth-hero-icon">🍲</span>
+                        <h2>Welcome to ShareFood</h2>
+                        <p>Join the movement to <span class="highlight">reduce food waste</span> and feed communities.</p>
+                    </div>
+                    <div class="tabs">
+                        <button class="tab active" id="tab-login">Login</button>
+                        <button class="tab" id="tab-register">Register</button>
+                    </div>
+                    
+                    <form id="login-form">
+                        <div class="input-group">
+                            <label for="login-email">Email</label>
+                            <input type="email" id="login-email" required placeholder="you@example.com">
+                        </div>
+                        <div class="input-group">
+                            <label for="login-password">Password</label>
+                            <input type="password" id="login-password" required placeholder="••••••••">
+                        </div>
+                        <div style="text-align: right; margin-bottom: 1rem;">
+                            <a href="#" id="forgot-password-link" class="text-sm text-primary">Forgot Password?</a>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Login</button>
+                    </form>
+
+                    <form id="register-form" style="display: none;">
+                        <div class="input-group">
+                            <label for="register-email">Email</label>
+                            <input type="email" id="register-email" required placeholder="you@example.com">
+                        </div>
+                        <div class="input-group">
+                            <label for="register-password">Password</label>
+                            <input type="password" id="register-password" required placeholder="Min 6 characters">
+                        </div>
+                        <div class="input-group">
+                            <label for="register-phone">Phone Number</label>
+                            <input type="tel" id="register-phone" required placeholder="+91 XXXXX XXXXX">
+                        </div>
+                        <div class="input-group">
+                            <label for="register-role">I am a</label>
+                            <select id="register-role" required>
+                                <option value="Individual">Individual</option>
+                                <option value="Donor">Business Donor</option>
+                                <option value="NGO">NGO</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Create Account</button>
+                    </form>
+                    <p id="auth-error" class="error-text"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== DONOR DASHBOARD ==================== -->
+        <div id="donor-dashboard" class="container dashboard page-transition" style="display: none;">
+            <div class="dashboard-header">
+                <h2>🏠 Donor Dashboard</h2>
+                <button class="btn btn-primary" id="show-donation-form-btn"><span>＋</span> New Donation</button>
+            </div>
+
+            <!-- Donor Stats -->
+            <div class="stats-bar" id="donor-stats-bar">
+                <div class="stat-card">
+                    <div class="stat-icon orange">📦</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total</span>
+                        <span class="stat-value" id="donor-stat-total">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">✅</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Active</span>
+                        <span class="stat-value" id="donor-stat-active">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon blue">🤝</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Completed</span>
+                        <span class="stat-value" id="donor-stat-completed">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon gold">⚖️</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Kg Saved</span>
+                        <span class="stat-value" id="donor-stat-kg">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Impact & Badges -->
+            <div class="impact-section" id="donor-impact-section">
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem; text-align: center;">🏆 Your Impact</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div class="impact-card">
+                            <div class="impact-big-number" id="impact-meals">0</div>
+                            <div class="impact-label">Meals Equivalent</div>
+                            <div class="impact-sub">~2 meals per Kg</div>
+                        </div>
+                        <div class="impact-card">
+                            <div class="impact-big-number" id="impact-co2">0</div>
+                            <div class="impact-label">Kg CO₂ Saved</div>
+                            <div class="impact-sub">~2.5 Kg CO₂ per Kg food</div>
+                        </div>
+                    </div>
+                    <div class="badges-row" id="donor-badges">
+                        <!-- Badges will be rendered by JS -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Donation Form -->
+            <div id="donation-form-container" class="card" style="display: none;">
+                <h3>Post a Donation</h3>
+                <form id="donation-form">
+                    <div class="input-group">
+                        <label for="food-item">Food Item Description</label>
+                        <input type="text" id="food-item" required placeholder="e.g., 50 plates of Rice and Curry">
+                    </div>
+                    <div class="input-group">
+                        <label for="food-category">Category</label>
+                        <select id="food-category" required>
+                            <option value="" disabled selected>Select food type</option>
+                            <option value="veg">🥬 Vegetarian</option>
+                            <option value="non-veg">🍗 Non-Vegetarian</option>
+                            <option value="cooked">🍛 Cooked Meals</option>
+                            <option value="raw">🥕 Raw Ingredients</option>
+                            <option value="bakery">🍞 Bakery</option>
+                            <option value="beverages">🥤 Beverages</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="quantity">Quantity (Kg)</label>
+                        <input type="number" id="quantity" required min="1" step="0.1" placeholder="e.g., 25">
+                    </div>
+                    <div class="input-group">
+                        <label for="neighborhood">Neighborhood (Bangalore)</label>
+                        <select id="neighborhood" required>
+                            <option value="" disabled selected>Select an area</option>
+                            <option value="Koramangala">Koramangala</option>
+                            <option value="Indiranagar">Indiranagar</option>
+                            <option value="Whitefield">Whitefield</option>
+                            <option value="HSR Layout">HSR Layout</option>
+                            <option value="Jayanagar">Jayanagar</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="hours-valid">Valid for (Hours)</label>
+                        <input type="number" id="hours-valid" required min="1" max="72" placeholder="e.g., 6">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancel-donation-btn">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Post Donation</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Donations List -->
+            <div class="card">
+                <div class="dashboard-tabs">
+                    <button class="tab active" id="tab-active-donations">Active</button>
+                    <button class="tab" id="tab-history-donations">History</button>
+                </div>
+                <div id="donor-loading" class="donations-grid">
+                    <div class="skeleton-card"><div class="skeleton skeleton-badge"></div><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text short"></div></div>
+                    <div class="skeleton-card"><div class="skeleton skeleton-badge"></div><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text short"></div></div>
+                </div>
+                <div id="my-donations-list" class="donations-grid stagger-children" style="display: none;"></div>
+                <div id="my-history-list" class="donations-grid stagger-children" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- ==================== NGO DASHBOARD ==================== -->
+        <div id="ngo-dashboard" class="container dashboard page-transition" style="display: none;">
+            <div class="dashboard-header">
+                <h2>🏥 NGO Dashboard</h2>
+            </div>
+
+            <div id="ngo-verification-banner" style="display: none;"></div>
+
+            <!-- View toggle: Grid / Map -->
+            <div class="map-toggle-row">
+                <div class="view-toggle">
+                    <button class="tab active" id="view-grid-btn">📋 List</button>
+                    <button class="tab" id="view-map-btn">🗺️ Map</button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filter-bar" id="ngo-filter-bar">
+                <label for="ngo-neighborhood-filter">📍 Area:</label>
+                <select id="ngo-neighborhood-filter">
+                    <option value="all">All Neighborhoods</option>
+                    <option value="Koramangala">Koramangala</option>
+                    <option value="Indiranagar">Indiranagar</option>
+                    <option value="Whitefield">Whitefield</option>
+                    <option value="HSR Layout">HSR Layout</option>
+                    <option value="Jayanagar">Jayanagar</option>
+                </select>
+                <label for="ngo-category-filter">🏷️ Type:</label>
+                <select id="ngo-category-filter">
+                    <option value="all">All Categories</option>
+                    <option value="veg">🥬 Vegetarian</option>
+                    <option value="non-veg">🍗 Non-Vegetarian</option>
+                    <option value="cooked">🍛 Cooked Meals</option>
+                    <option value="raw">🥕 Raw Ingredients</option>
+                    <option value="bakery">🍞 Bakery</option>
+                    <option value="beverages">🥤 Beverages</option>
+                </select>
+            </div>
+
+            <p id="ngo-status-msg"></p>
+
+            <!-- Map View -->
+            <div id="map-view" class="map-container" style="display: none;">
+                <div id="donation-map"></div>
+            </div>
+
+            <!-- Loading skeleton -->
+            <div id="ngo-loading" class="donations-grid">
+                <div class="skeleton-card"><div class="skeleton skeleton-badge"></div><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text short"></div></div>
+                <div class="skeleton-card"><div class="skeleton skeleton-badge"></div><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text short"></div></div>
+                <div class="skeleton-card"><div class="skeleton skeleton-badge"></div><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text short"></div></div>
+            </div>
+
+            <!-- Grid View -->
+            <div id="active-donations-list" class="donations-grid stagger-children" style="display: none;"></div>
+            
+            <!-- Claim Modal -->
+            <div id="claim-modal" class="modal" style="display: none;">
+                <div class="modal-content card glassmorphism">
+                    <h3 style="margin-bottom: 0.5rem;">🎉 Donation Claimed!</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">Contact the donor to arrange pickup.</p>
+                    <div class="contact-info-box">
+                        <p><strong>📞 Donor Contact:</strong> <span id="modal-donor-contact"></span></p>
+                    </div>
+                    <button class="btn btn-primary w-100" id="close-modal-btn">Got it!</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== ADMIN DASHBOARD ==================== -->
+        <div id="admin-dashboard" class="container dashboard page-transition" style="display: none;">
+            <div class="dashboard-header">
+                <h2>⚡ Admin Dashboard</h2>
+            </div>
+            
+            <div class="metrics-grid stagger-children">
+                <div class="metric-card">
+                    <span class="metric-icon">📦</span>
+                    <div class="metric-title">Total Donations</div>
+                    <div class="metric-value" id="metric-total-donations">0</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-icon">⏳</span>
+                    <div class="metric-title">Pending NGOs</div>
+                    <div class="metric-value" id="metric-pending-ngos">0</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-icon">✅</span>
+                    <div class="metric-title">Claimed Donations</div>
+                    <div class="metric-value" id="metric-claimed-donations">0</div>
+                </div>
+            </div>
+
+            <div class="card admin-section">
+                <h3>NGO Verification Queue</h3>
+                <p class="section-desc">Approve NGOs so they can claim food donations.</p>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead><tr><th>Email</th><th>Phone</th><th>Action</th></tr></thead>
+                        <tbody id="admin-ngo-list"></tbody>
+                    </table>
+                </div>
+                <p id="admin-ngo-status-msg" style="margin-top: 1rem; color: var(--text-muted); font-size: 0.9rem;"></p>
+            </div>
+
+            <div class="card admin-section">
+                <h3>Manage All NGOs</h3>
+                <p class="section-desc">View status, revoke access, or re-verify all registered NGOs.</p>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead><tr><th>Email</th><th>Phone</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody id="admin-all-ngo-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card admin-section">
+                <div class="admin-section-header">
+                    <div>
+                        <h3>Recent Activity</h3>
+                        <p class="section-desc" style="margin-bottom: 0;">All donations across the platform.</p>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" id="export-csv-btn">📥 Export CSV</button>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead><tr><th>Food Item</th><th>Category</th><th>Location</th><th>Status</th><th>Claimed By</th></tr></thead>
+                        <tbody id="admin-donations-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer" id="app-footer">
+            <div><span class="footer-brand">ShareFood</span> — Reducing food waste, one meal at a time.</div>
+            <div class="footer-tagline">Built with ❤️ for Bangalore communities</div>
+        </footer>
+    </div>
+
+    <!-- Leaflet JS (free, no API key) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <!-- Firebase SDK (Modular) -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
