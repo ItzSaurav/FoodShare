@@ -14,7 +14,8 @@ FoodShare gives users a platform to:
 ## 🛠 Tech Stack
 
 I kept things lightweight and modern for this one:
-- **Backend:** Node.js, Express 5 (serving static assets and handling SPA fallback routing).
+- **Architecture:** Client-side PWA interfacing with Firebase.
+- **Static Server:** Node.js, Express 5 (used purely for serving static assets and handling SPA fallback routing).
 - **Frontend:** Vanilla HTML/CSS/JS (PWA-enabled with a custom Service Worker and Manifest).
 - **Deployment:** Vercel (serverless configuration out of the box).
 
