@@ -285,6 +285,7 @@ function formatCountdown(ms) {
 function startCountdown(elementId, expiryTimestamp) {
     if (!expiryTimestamp) return;
     const expiry = expiryTimestamp.toDate().getTime();
+    let intervalId;
     function update() {
         const el = document.getElementById(elementId);
         if (!el) return;
@@ -292,10 +293,10 @@ function startCountdown(elementId, expiryTimestamp) {
         const { text, urgency } = formatCountdown(remaining);
         el.textContent = text;
         el.className = `countdown-text ${urgency}`;
-        if (remaining <= 0) clearInterval(intervalId);
+        if (remaining <= 0 && intervalId) clearInterval(intervalId);
     }
     update();
-    const intervalId = setInterval(update, 1000);
+    intervalId = setInterval(update, 1000);
     countdownIntervals.push(intervalId);
 }
 
@@ -449,7 +450,7 @@ onAuthStateChanged(auth, async (user) => {
                             setupNGODashboard();
                         }
                     } else {
-                        signOut(auth);
+                        console.warn('User document not found in Firestore yet.');
                     }
                 } catch(err) { console.error('Auth snapshot error:', err); }
             }, (error) => console.error("Error fetching user role:", error));
