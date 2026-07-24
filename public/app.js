@@ -526,7 +526,19 @@ safeOn(els.loginForm, 'submit', async (e) => {
     if (els.authError) els.authError.textContent = '';
     if (btn) { btn.disabled = true; btn.textContent = 'Logging in...'; }
     try {
-        await signInWithEmailAndPassword(auth, email, password);
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        // Recover broken accounts from before the registration bug was fixed
+        const userDocRef = doc(db, 'users', cred.user.uid);
+        const snap = await getDoc(userDocRef);
+        if (!snap.exists()) {
+            await setDoc(userDocRef, {
+                email: cred.user.email,
+                role: 'Individual',
+                phone: '',
+                isVerified: true,
+                createdAt: serverTimestamp()
+            });
+        }
     } catch (error) {
         if (els.authError) els.authError.textContent = error.message;
     } finally {
