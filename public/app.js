@@ -295,8 +295,8 @@ function startCountdown(elementId, expiryTimestamp) {
         el.className = `countdown-text ${urgency}`;
         if (remaining <= 0 && intervalId) clearInterval(intervalId);
     }
-    update();
     intervalId = setInterval(update, 1000);
+    update();
     countdownIntervals.push(intervalId);
 }
 
@@ -693,16 +693,26 @@ function setupDonorDashboard() {
             document.querySelectorAll('.cancel-btn').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     if (confirm('Cancel this donation?')) {
-                        await setDoc(doc(db, 'donations', e.target.getAttribute('data-id')), { status: 'cancelled' }, { merge: true });
-                        showToast('Cancelled', 'info');
+                        try {
+                            await setDoc(doc(db, 'donations', e.target.getAttribute('data-id')), { status: 'cancelled' }, { merge: true });
+                            showToast('Cancelled', 'info');
+                        } catch (err) {
+                            showToast('Error cancelling donation', 'error');
+                            console.error(err);
+                        }
                     }
                 });
             });
             document.querySelectorAll('.complete-btn').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     if (confirm('Mark as picked up?')) {
-                        await setDoc(doc(db, 'donations', e.target.getAttribute('data-id')), { status: 'completed' }, { merge: true });
-                        showToast('Completed! 🎉', 'success');
+                        try {
+                            await setDoc(doc(db, 'donations', e.target.getAttribute('data-id')), { status: 'completed' }, { merge: true });
+                            showToast('Completed! 🎉', 'success');
+                        } catch (err) {
+                            showToast('Error completing donation', 'error');
+                            console.error(err);
+                        }
                     }
                 });
             });
