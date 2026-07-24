@@ -435,7 +435,7 @@ onAuthStateChanged(auth, async (user) => {
             const userDocRef = doc(db, 'users', user.uid);
             if (unsubscribeUser) unsubscribeUser();
             
-            unsubscribeUser = onSnapshot(userDocRef, (userSnap) => {
+            unsubscribeUser = onSnapshot(userDocRef, async (userSnap) => {
                 try {
                     if (userSnap.exists()) {
                         const userData = userSnap.data();
@@ -450,20 +450,19 @@ onAuthStateChanged(auth, async (user) => {
                             setupNGODashboard();
                         }
                     } else {
-                        console.warn('User document not found in Firestore yet.');
-                        const isNewUser = (new Date() - new Date(user.metadata.creationTime)) < 15000;
-                        if (!isNewUser) {
-                            try {
-                                await setDoc(userDocRef, {
-                                    email: user.email,
-                                    role: 'Individual',
-                                    phone: '',
-                                    isVerified: true,
-                                    createdAt: serverTimestamp()
-                                });
-                            } catch (e) {
-                                console.error('Account recovery failed:', e);
-                            }
+                        console.warn('User document not found in Firestore — attempting recovery...');
+                        // Older accounts may be missing their Firestore doc, recreate it
+                        try {
+                            await setDoc(userDocRef, {
+                                email: user.email,
+                                role: 'Individual',
+                                phone: '',
+                                isVerified: true,
+                                createdAt: serverTimestamp()
+                            });
+                            console.log('Account recovered successfully.');
+                        } catch (e) {
+                            console.error('Account recovery failed:', e);
                         }
                     }
                 } catch(err) { console.error('Auth snapshot error:', err); }
@@ -533,7 +532,7 @@ safeOn(els.tabRegister, 'click', () => {
 // Login
 safeOn(els.loginForm, 'submit', async (e) => {
     e.preventDefault();
-    const email = $('login-email')?.value;
+    const email = $('login-email')?.value?.trim();
     const password = $('login-password')?.value;
     if (!email || !password) return;
     const btn = els.loginForm.querySelector('button[type="submit"]');
@@ -541,9 +540,10 @@ safeOn(els.loginForm, 'submit', async (e) => {
     if (btn) { btn.disabled = true; btn.textContent = 'Logging in...'; }
     try {
         await signInWithEmailAndPassword(auth, email, password);
+        // Login succeeded — onAuthStateChanged will handle navigation
+        // Don't re-enable the button; the form will be hidden by showDashboard()
     } catch (error) {
         if (els.authError) els.authError.textContent = error.message;
-    } finally {
         if (btn) { btn.disabled = false; btn.textContent = 'Login'; }
     }
 });
