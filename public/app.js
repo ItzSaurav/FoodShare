@@ -438,6 +438,7 @@ onAuthStateChanged(auth, async (user) => {
             unsubscribeUser = onSnapshot(userDocRef, (userSnap) => {
                 try {
                     if (userSnap.exists()) {
+                        window.isRecoveringAccount = false;
                         const userData = userSnap.data();
                         const wasVerified = isUserVerified;
                         userRole = userData.role;
@@ -451,6 +452,20 @@ onAuthStateChanged(auth, async (user) => {
                         }
                     } else {
                         console.warn('User document not found in Firestore yet.');
+                        if (window.isRecoveringAccount) {
+                            window.isRecoveringAccount = false;
+                            try {
+                                await setDoc(userDocRef, {
+                                    email: user.email,
+                                    role: 'Individual',
+                                    phone: '',
+                                    isVerified: true,
+                                    createdAt: serverTimestamp()
+                                });
+                            } catch (e) {
+                                console.error('Account recovery failed:', e);
+                            }
+                        }
                     }
                 } catch(err) { console.error('Auth snapshot error:', err); }
             }, (error) => console.error("Error fetching user role:", error));
@@ -526,19 +541,8 @@ safeOn(els.loginForm, 'submit', async (e) => {
     if (els.authError) els.authError.textContent = '';
     if (btn) { btn.disabled = true; btn.textContent = 'Logging in...'; }
     try {
-        const cred = await signInWithEmailAndPassword(auth, email, password);
-        // Recover broken accounts from before the registration bug was fixed
-        const userDocRef = doc(db, 'users', cred.user.uid);
-        const snap = await getDoc(userDocRef);
-        if (!snap.exists()) {
-            await setDoc(userDocRef, {
-                email: cred.user.email,
-                role: 'Individual',
-                phone: '',
-                isVerified: true,
-                createdAt: serverTimestamp()
-            });
-        }
+        window.isRecoveringAccount = true;
+        await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
         if (els.authError) els.authError.textContent = error.message;
     } finally {
