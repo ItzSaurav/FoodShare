@@ -451,6 +451,20 @@ onAuthStateChanged(auth, async (user) => {
                         }
                     } else {
                         console.warn('User document not found in Firestore yet.');
+                        const isNewUser = (new Date() - new Date(user.metadata.creationTime)) < 15000;
+                        if (!isNewUser) {
+                            try {
+                                await setDoc(userDocRef, {
+                                    email: user.email,
+                                    role: 'Individual',
+                                    phone: '',
+                                    isVerified: true,
+                                    createdAt: serverTimestamp()
+                                });
+                            } catch (e) {
+                                console.error('Account recovery failed:', e);
+                            }
+                        }
                     }
                 } catch(err) { console.error('Auth snapshot error:', err); }
             }, (error) => console.error("Error fetching user role:", error));
@@ -526,22 +540,7 @@ safeOn(els.loginForm, 'submit', async (e) => {
     if (els.authError) els.authError.textContent = '';
     if (btn) { btn.disabled = true; btn.textContent = 'Logging in...'; }
     try {
-        const cred = await signInWithEmailAndPassword(auth, email, password);
-        
-        // Wait to ensure Firestore client has received the updated auth token from Firebase Auth
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        const userDocRef = doc(db, 'users', cred.user.uid);
-        const snap = await getDoc(userDocRef);
-        if (!snap.exists()) {
-            await setDoc(userDocRef, {
-                email: cred.user.email,
-                role: 'Individual',
-                phone: '',
-                isVerified: true,
-                createdAt: serverTimestamp()
-            });
-        }
+        await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
         if (els.authError) els.authError.textContent = error.message;
     } finally {
