@@ -435,7 +435,7 @@ onAuthStateChanged(auth, async (user) => {
             const userDocRef = doc(db, 'users', user.uid);
             if (unsubscribeUser) unsubscribeUser();
             
-            unsubscribeUser = onSnapshot(userDocRef, (userSnap) => {
+            unsubscribeUser = onSnapshot(userDocRef, async (userSnap) => {
                 try {
                     if (userSnap.exists()) {
                         window.isRecoveringAccount = false;
