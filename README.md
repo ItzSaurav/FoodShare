@@ -1,49 +1,45 @@
-# 🍲 FoodShare
+# FoodShare
 
-> **Connecting communities, one meal at a time.**
+A Progressive Web App (PWA) prototype designed for community-based surplus food sharing to reduce food waste.
 
-FoodShare is a community-driven web application designed to reduce food waste and help those in need by allowing locals to share surplus food. It's built with a focus on simplicity, responsiveness, and performance as a Progressive Web App (PWA).
+## Overview
 
-## 🚀 What It Does
+FoodShare is a client-side web application built with vanilla JavaScript and Firebase. It provides a platform for individuals and local businesses to list surplus food for pickup.
 
-FoodShare gives users a platform to:
-- Browse available food listings in their local area.
-- Share their own surplus food to prevent waste.
-- Experience a seamless app-like interface directly in the browser.
+## Features
 
-## 🛠 Tech Stack
+- **Surplus Listings**: Post and browse available food items with pickup location and expiration info.
+- **Firebase Integration**: User authentication and real-time Firestore database queries.
+- **Progressive Web App**: Service Worker caching (`sw.js`) and web app manifest (`manifest.json`) for installability.
+- **Static Express Server**: Lightweight Node.js server for serving static assets and handling SPA fallback.
 
-I kept things lightweight and modern for this one:
-- **Architecture:** Client-side PWA interfacing with Firebase.
-- **Static Server:** Node.js, Express 5 (used purely for serving static assets and handling SPA fallback routing).
-- **Frontend:** Vanilla HTML/CSS/JS (PWA-enabled with a custom Service Worker and Manifest).
-- **Deployment:** Vercel (serverless configuration out of the box).
+## Tech Stack
 
-## 💻 Getting Started Locally
+- **Frontend**: Vanilla JavaScript (ES6+), HTML5, CSS3
+- **Backend Services**: Firebase Authentication, Cloud Firestore
+- **Server**: Node.js, Express
+- **Deployment**: Vercel
 
-Want to run it on your own machine? It's as simple as it gets.
+## Local Setup
 
-1. **Clone the repo:**
+1. Clone the repository:
    ```bash
    git clone https://github.com/ItzSaurav/FoodShare.git
    cd FoodShare
    ```
 
-2. **Install dependencies:**
+2. Install dependencies:
    ```bash
    npm install
    ```
 
-3. **Start the server:**
+3. Start the server:
    ```bash
    npm start
    ```
-   *The app will be running at `http://localhost:3000` (or whatever port you set in your environment).*
 
-## 🌍 Deployment
+4. Open `http://localhost:3000` in your browser.
 
-This project is configured for seamless deployment on Vercel. 
-Just connect your GitHub repo to Vercel, and the `vercel.json` file handles routing all requests to the Express server function (`server.js`).
+## License
 
----
-*Built by [Saurav](https://github.com/ItzSaurav) – Backend Developer & Automation Enthusiast.*
+MIT License.
