@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -----------------------------------------------------------------------
+    // USERS
+    // -----------------------------------------------------------------------
+    // Any authenticated user can read any user doc
+    //   → needed for Admin to list all NGOs, NGO to see donor contact info
+    // Any authenticated user can write their OWN doc
+    //   → needed for registration, profile update
+    // Admin (admin@food.com) can write ANY user doc
+    //   → needed for NGO verification / rejection / revoke
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (
+        request.auth.uid == userId ||
+        request.auth.token.email == 'admin@food.com'
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // DONATIONS
+    // -----------------------------------------------------------------------
+    // Any authenticated user can read all donations
+    //   → Donors see their own, NGOs browse all active, Admin sees everything
+    // Any authenticated user can create a donation
+    //   → Donors post food
+    // Any authenticated user can update a donation
+    //   → Donors cancel/complete their own (status update)
+    //   → NGOs claim a donation (sets claimedBy + status)
+    //   → Admin can manage any donation
+    // Only the original donor (or admin) can delete a donation
+    match /donations/{donationId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null && (
+        request.auth.uid == resource.data.donorId ||
+        request.auth.token.email == 'admin@food.com'
+      );
+    }
+  }
+}

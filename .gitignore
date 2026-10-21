@@ -1,1 +1,15 @@
-.vercel
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Vercel & build
+.vercel/
+dist/
+build/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
